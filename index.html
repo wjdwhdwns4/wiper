@@ -16,12 +16,13 @@
   }
   *{margin:0;padding:0;box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
-  body{font-family:'Gothic A1',-apple-system,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+  body{font-family:'Gothic A1',-apple-system,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:break-word}
 
   /* header */
   header{position:sticky;top:0;z-index:40;background:rgba(251,251,250,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
   .nav{max-width:1080px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between}
-  .logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:18px;letter-spacing:-.02em}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:18px;letter-spacing:-.01em}
+  .logo .ltxt{display:inline-flex;align-items:center;line-height:1}
   .logo .mk{width:26px;height:26px;border-radius:7px;background:var(--ink);position:relative;flex:none}
   .logo .mk::before{content:"";position:absolute;left:6px;top:6px;right:6px;bottom:6px;border:2px solid #fff;border-radius:50%;border-bottom-color:transparent;transform:rotate(-30deg)}
   .nav-links{display:flex;gap:26px;font-size:14px;font-weight:500;color:var(--ink2)}
@@ -130,7 +131,7 @@
 <body>
 <header>
   <div class="nav">
-    <div class="logo"><span class="mk"></span>레인폴드 와이퍼</div>
+    <div class="logo"><span class="mk"></span><span class="ltxt">레인폴드 와이퍼</span></div>
     <nav class="nav-links"><a href="#">홈</a><a href="#">제품</a><a href="#" style="color:var(--accent);font-weight:700">사이즈 찾기</a></nav>
   </div>
 </header>

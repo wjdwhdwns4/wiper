@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>와이퍼 사이즈 찾기</title>
+<style>
+  /* 시스템 폰트 사용 (외부 폰트 불러오지 않음 → 또렷하고 빠름) */
+  :root{
+    --ink:#1a1d21; --ink2:#454b53; --ink3:#7c838b;
+    --line:#e7e9ec; --line2:#f0f1f3;
+    --bg:#fbfbfa; --panel:#ffffff;
+    --accent:#e8482b; --accent-soft:#fdeee9;
+    --chip:#f3f4f6;
+    --shadow:0 1px 2px rgba(20,24,30,.04),0 4px 16px rgba(20,24,30,.04);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic','맑은 고딕','Noto Sans KR',Roboto,'Helvetica Neue',sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:break-word}
+
+  /* header */
+  header{position:sticky;top:0;z-index:40;background:rgba(251,251,250,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+  .nav{max-width:1080px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:18px;letter-spacing:-.01em}
+  .logo .ltxt{display:inline-flex;align-items:center;line-height:1}
+  .logo .mk{width:26px;height:26px;border-radius:7px;background:var(--ink);position:relative;flex:none}
+  .logo .mk::before{content:"";position:absolute;left:6px;top:6px;right:6px;bottom:6px;border:2px solid #fff;border-radius:50%;border-bottom-color:transparent;transform:rotate(-30deg)}
+  .nav-links{display:flex;gap:26px;font-size:14px;font-weight:500;color:var(--ink2)}
+  .nav-links a{color:inherit;text-decoration:none;transition:color .15s}
+  .nav-links a:hover{color:var(--ink)}
+  @media(max-width:640px){.nav-links{display:none}}
+
+  /* hero / search */
+  .hero{max-width:1080px;margin:0 auto;padding:46px 22px 26px}
+  .eyebrow{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.04em;margin-bottom:12px}
+  h1{font-size:33px;font-weight:800;letter-spacing:-.03em;line-height:1.18}
+  .sub{margin-top:12px;color:var(--ink2);font-size:15px;max-width:640px}
+  .sub b{color:var(--ink);font-weight:700}
+
+  .searchwrap{margin-top:26px;display:flex;gap:12px;align-items:stretch;justify-content:space-between}
+  /* 제조사 드롭다운 (좌측) */
+  .selectbox{position:relative;flex:none;width:210px}
+  #brandSel{appearance:none;-webkit-appearance:none;width:100%;height:100%;font:inherit;font-size:15px;font-weight:600;color:var(--ink);background:var(--panel);border:1.5px solid var(--line);border-radius:15px;padding:14px 42px 14px 18px;cursor:pointer;box-shadow:var(--shadow);transition:border-color .18s}
+  #brandSel:focus{outline:none;border-color:var(--ink)}
+  .selectbox .cv{position:absolute;right:16px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--ink3)}
+  /* 검색바 (우측, 폭 절반 정도) */
+  .searchbar{flex:0 1 46%;display:flex;align-items:center;gap:12px;background:var(--panel);border:1.5px solid var(--line);border-radius:15px;padding:5px 6px 5px 18px;box-shadow:var(--shadow);transition:border-color .18s,box-shadow .18s}
+  .searchbar:focus-within{border-color:var(--ink);box-shadow:0 2px 8px rgba(20,24,30,.06),0 8px 28px rgba(20,24,30,.07)}
+  .searchbar svg{flex:none;color:var(--ink3)}
+  #q{flex:1;border:none;outline:none;font:inherit;font-size:16px;background:transparent;padding:12px 0;color:var(--ink);min-width:0}
+  #q::placeholder{color:var(--ink3)}
+  .clr{border:none;background:var(--chip);width:30px;height:30px;border-radius:8px;cursor:pointer;color:var(--ink2);display:none;align-items:center;justify-content:center;flex:none}
+  .clr:hover{background:#e7e9ec}
+  .clr.on{display:flex}
+  @media(max-width:640px){.searchwrap{flex-direction:column}.selectbox{width:100%}}
+
+  .meta{max-width:1080px;margin:0 auto;padding:8px 22px 0;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--ink3);font-weight:500}
+
+  /* results */
+  main{max-width:1080px;margin:0 auto;padding:14px 22px 80px}
+
+  /* 그룹 패널: 흰 카드 + 미세한 그림자, 베이지 배경 위에 살짝 떠 보이게 */
+  .group{margin-top:22px}
+  .ghead{display:flex;align-items:baseline;gap:11px;padding:0 4px 10px}
+  .ghead h2{font-size:17px;font-weight:800;letter-spacing:-.01em}
+  .ghead .cnt{font-size:12.5px;color:var(--ink3);font-weight:600}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(20,24,30,.03),0 6px 18px rgba(20,24,30,.035)}
+
+  .row{display:grid;grid-template-columns:1fr 105px 105px 130px 92px;gap:14px;align-items:center;padding:16px 18px;border-top:1px solid var(--line2);transition:background .12s}
+  .row:first-child{border-top:none}
+  .row:hover{background:#fafaf9}
+  .colhead{display:grid;grid-template-columns:1fr 105px 105px 130px 92px;gap:14px;padding:12px 18px;font-size:11.5px;font-weight:700;color:var(--ink3);letter-spacing:.02em;text-transform:uppercase;background:#faf9f6;border-bottom:1px solid var(--line2)}
+  .colhead span:not(:first-child),.val{text-align:center}
+
+  .car{min-width:0}
+  .car .nm{font-size:15.5px;font-weight:700;letter-spacing:-.01em}
+  .car .dt{font-size:12.5px;color:var(--ink2);margin-top:2px}
+  .car .dt .ylabel{color:var(--ink3);font-weight:600}
+  .car .dt .ym{color:var(--ink3);margin-left:5px}
+
+  .size{font-size:18px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .size .u{font-size:11px;font-weight:600;color:var(--ink3);margin-left:1px}
+  .dash{color:var(--line);font-weight:700}
+  .rear .size{font-size:13px;font-weight:700}
+  .rear .rcode{display:inline-block;font-size:12px;font-weight:700;color:var(--ink);background:var(--chip);padding:4px 9px;border-radius:7px;font-variant-numeric:tabular-nums}
+  .adp{display:inline-block;font-size:12px;font-weight:700;padding:4px 10px;border-radius:7px;background:var(--accent-soft);color:#7a2410;border:1px solid #f6d4c7;white-space:nowrap;letter-spacing:-.01em}
+  .adp.wait{background:var(--chip);color:var(--ink2);border-color:var(--line)}
+
+  mark{background:#fff2b8;color:inherit;padding:0 1px;border-radius:2px}
+
+  /* 한영 변환 안내 박스 */
+  .suggest{margin-top:18px;display:flex;align-items:center;gap:10px;padding:13px 18px;background:#f7f8fa;border:1px solid var(--line);border-radius:12px;font-size:14px;color:var(--ink2);line-height:1.4}
+  .suggest .ic{flex:none;width:18px;height:18px;border-radius:50%;background:var(--ink3);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+  .suggest .lab{font-weight:700;color:var(--ink);margin-right:4px}
+  .suggest .hi{color:var(--accent);font-weight:700}
+  .suggest .typed{color:var(--ink3);text-decoration:line-through;margin-left:4px;font-size:13px}
+
+  .empty{text-align:center;padding:70px 20px;color:var(--ink3)}
+  .empty .big{font-size:18px;font-weight:700;color:var(--ink2);margin-bottom:6px}
+
+  /* 로딩/에러 상태 */
+  .loading{display:flex;flex-direction:column;align-items:center;gap:14px;padding:80px 20px;color:var(--ink3)}
+  .spinner{width:32px;height:32px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .errbox{padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:14px;text-align:center;color:var(--ink2)}
+  .errbox .big{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:6px}
+  .errbox button{margin-top:14px;border:1px solid var(--ink);background:var(--ink);color:#fff;font:inherit;font-weight:700;padding:9px 18px;border-radius:9px;cursor:pointer}
+  .errbox button:hover{opacity:.88}
+
+  /* mobile cards */
+  @media(max-width:680px){
+    h1{font-size:27px}
+    main{padding:14px 16px 60px}
+    .colhead{display:none}
+    .panel{border-radius:12px;border:none;box-shadow:none;background:transparent}
+    /* 한 행 = 독립된 카드 (차종 간 경계 명확히) */
+    .row{display:block;padding:16px;margin-bottom:12px;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 3px rgba(20,24,30,.05)}
+    .row:first-child{border-top:1px solid var(--line)}
+    .row:hover{background:var(--panel)}
+    .car{margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line2)}
+    .m-sizes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+    .m-cell{background:#faf9f6;border:1px solid var(--line2);border-radius:10px;padding:10px 12px}
+    .m-cell .mlab{font-size:11px;font-weight:700;color:var(--ink3);margin-bottom:3px}
+    .m-cell .size{font-size:19px}
+    /* 후방·어댑터: 라벨 + 값을 왼쪽에 붙여서 표시 */
+    .m-extra{display:flex;flex-direction:column;gap:9px}
+    .m-line{display:flex;align-items:center;gap:10px}
+    .m-line .mlab{font-size:12px;font-weight:700;color:var(--ink3);min-width:74px;flex:none}
+    .val.desk-seat,.val.rear,.val.adpcell{display:none}
+  }
+  .m-sizes,.m-extra{display:none}
+  @media(max-width:680px){.m-sizes,.m-extra{display:grid}.m-extra{display:flex}}
+
+  footer{max-width:1080px;margin:0 auto;padding:26px 22px 50px;border-top:1px solid var(--line);color:var(--ink3);font-size:12.5px;line-height:1.7}
+</style>
+</head>
+<body>
+<header>
+  <div class="nav">
+    <div class="logo"><span class="mk"></span><span class="ltxt">레인폴드 와이퍼</span></div>
+    <nav class="nav-links"><a href="#">홈</a><a href="https://smartstore.naver.com/feynlabkorea" target="_blank" rel="noopener">제품 보러가기</a><a href="#" style="color:var(--accent);font-weight:700">사이즈 찾기</a></nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="eyebrow">WIPER SIZE FINDER</div>
+  <h1>내 차 와이퍼 사이즈,<br>3초 만에 확인하세요</h1>
+  <p class="sub">차량명을 입력하면 <b>운전석·보조석·후방</b> 와이퍼 사이즈와 호환 어댑터까지 한 번에 보여드려요. 같은 차종도 연식·트림에 따라 다를 수 있으니 <b>장착 전 기존 사이즈</b>를 꼭 확인하세요.</p>
+
+  <div class="searchwrap">
+    <div class="selectbox">
+      <select id="brandSel" aria-label="제조사 선택"></select>
+      <span class="cv"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>
+    </div>
+    <div class="searchbar">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="q" type="text" placeholder="제조사 또는 차량명을 입력해 주세요." autocomplete="off">
+      <button class="clr" id="clr" aria-label="지우기"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+  </div>
+</section>
+
+<div class="meta"><span id="count"></span><span>출처 · 레인폴드 와이퍼 호환표</span></div>
+
+<main id="results"></main>
+
+<footer>
+  본 정보는 참고용이며 차량 옵션·연식에 따라 실제 사이즈가 다를 수 있습니다. 장착 전 기존 와이퍼 규격을 반드시 확인하시기 바랍니다.<br>
+  &copy; RAINFOLD Wiper · 전체 634개 차종 수록
+</footer>
+
+<script>
+let DATA = [];
+
+/* =====================================================================
+ * ⚠️  여기에 Apps Script 웹 앱 URL을 붙여넣으세요.
+ *     예) const API_URL = 'https://script.google.com/macros/s/AKfycbwSdxK6hCYNxCuowB1p8VGgUrKZv_c0Ebq2E9d-EheY8f2j0kaJcOchmh5cDsPaTS1X/exec';
+ *     (셋팅 가이드 3단계 참고)
+ * ===================================================================== */
+const API_URL = 'https://script.google.com/macros/s/AKfycbwSdxK6hCYNxCuowB1p8VGgUrKZv_c0Ebq2E9d-EheY8f2j0kaJcOchmh5cDsPaTS1X/exec';
+
+const $=s=>document.querySelector(s);
+const q=$('#q'), clr=$('#clr'), brandSel=$('#brandSel'), resEl=$('#results'), cntEl=$('#count');
+
+function shortName(b){const m=b.match(/\((.*?)\)/);return m?m[1]:b;}
+// 표시용 라벨: 원본 그대로 사용
+function brandLabel(b){return b;}
+
+// 제조사 목록: 상위 6개 고정 + 나머지는 영문명 기준 오름차순(A→Z)
+const FIXED=['HYUNDAI (현대)','KIA (기아)','GENESIS (제네시스)','RENAULT SAMSUNG (삼성)','KGM','CHEVROLET (쉐보레)'];
+const order={};
+DATA.forEach(r=>order[r.brand]=(order[r.brand]||0)+1);
+const orderIdx={};
+[...new Set(DATA.map(r=>r.brand))]
+  .filter(b=>!FIXED.includes(b))
+  .sort((a,b)=>a.localeCompare(b,'en'))
+  .forEach((b,i)=>orderIdx[b]=FIXED.length+i);
+FIXED.forEach((b,i)=>orderIdx[b]=i);
+const brands=Object.keys(order).sort((a,b)=>orderIdx[a]-orderIdx[b]);
+let activeBrand='';
+
+// 드롭다운 채우기 (차량 수 표기 없음)
+const optAll=document.createElement('option');optAll.value='';optAll.textContent='전체 제조사';brandSel.appendChild(optAll);
+brands.forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=brandLabel(b);brandSel.appendChild(o);});
+brandSel.addEventListener('change',()=>{activeBrand=brandSel.value;render();});
+
+function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function hl(text,term){
+  text=text||'';
+  if(!term) return esc(text);
+  const lowText=text.toLowerCase(), lowTerm=term.toLowerCase();
+  let i=lowText.indexOf(lowTerm);
+  if(i>=0) return esc(text.slice(0,i))+'<mark>'+esc(text.slice(i,i+term.length))+'</mark>'+esc(text.slice(i+term.length));
+  let fixed=term;
+  for(const k in SPELL_FIX){ if(fixed.includes(k)) fixed=fixed.split(k).join(SPELL_FIX[k]); }
+  if(fixed!==term){
+    const fi=lowText.indexOf(fixed.toLowerCase());
+    if(fi>=0) return esc(text.slice(0,fi))+'<mark>'+esc(text.slice(fi,fi+fixed.length))+'</mark>'+esc(text.slice(fi+fixed.length));
+  }
+  const nText=normKo(text), nTerm=normKo(fixed);
+  if(nTerm){
+    const j=nText.indexOf(nTerm);
+    if(j>=0) return esc(text.slice(0,j))+'<mark>'+esc(text.slice(j,j+nTerm.length))+'</mark>'+esc(text.slice(j+nTerm.length));
+  }
+  return esc(text);
+}
+
+/* === 영문 자판 → 한글 자판 변환 (예: rmfoswj → 그랜저) === */
+const EN2KO={
+  q:'ㅂ',w:'ㅈ',e:'ㄷ',r:'ㄱ',t:'ㅅ',y:'ㅛ',u:'ㅕ',i:'ㅑ',o:'ㅐ',p:'ㅔ',
+  a:'ㅁ',s:'ㄴ',d:'ㅇ',f:'ㄹ',g:'ㅎ',h:'ㅗ',j:'ㅓ',k:'ㅏ',l:'ㅣ',
+  z:'ㅋ',x:'ㅌ',c:'ㅊ',v:'ㅍ',b:'ㅠ',n:'ㅜ',m:'ㅡ',
+  Q:'ㅃ',W:'ㅉ',E:'ㄸ',R:'ㄲ',T:'ㅆ',Y:'ㅛ',U:'ㅕ',I:'ㅑ',O:'ㅒ',P:'ㅖ'
+};
+const CHO=['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+const JUNG=['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+const JONG=['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+// 복합 모음/자음 조합
+const DBL_JUNG={'ㅗㅏ':'ㅘ','ㅗㅐ':'ㅙ','ㅗㅣ':'ㅚ','ㅜㅓ':'ㅝ','ㅜㅔ':'ㅞ','ㅜㅣ':'ㅟ','ㅡㅣ':'ㅢ'};
+const DBL_JONG={'ㄱㅅ':'ㄳ','ㄴㅈ':'ㄵ','ㄴㅎ':'ㄶ','ㄹㄱ':'ㄺ','ㄹㅁ':'ㄻ','ㄹㅂ':'ㄼ','ㄹㅅ':'ㄽ','ㄹㅌ':'ㄾ','ㄹㅍ':'ㄿ','ㄹㅎ':'ㅀ','ㅂㅅ':'ㅄ'};
+
+function enToKo(input){
+  // 우선 각 문자를 자모로 변환 (한글 자판에 매핑되지 않는 문자는 그대로)
+  const jamo=[];
+  for(const ch of input){
+    if(EN2KO[ch]) jamo.push(EN2KO[ch]);
+    else return null; // 영문 자판 외 문자가 섞이면 변환 시도 안 함 (BMW, 모델3 등 보호)
+  }
+  // 자모를 음절로 조합
+  let out='', i=0;
+  while(i<jamo.length){
+    const c=jamo[i];
+    const choIdx=CHO.indexOf(c);
+    if(choIdx<0){ out+=c; i++; continue; }
+    // 중성 확인
+    if(i+1>=jamo.length||JUNG.indexOf(jamo[i+1])<0){ out+=c; i++; continue; }
+    let jungIdx=JUNG.indexOf(jamo[i+1]);
+    let consumed=2;
+    // 복합 중성
+    if(i+2<jamo.length){
+      const merged=DBL_JUNG[jamo[i+1]+jamo[i+2]];
+      if(merged){ jungIdx=JUNG.indexOf(merged); consumed=3; }
+    }
+    // 종성 확인
+    let jongIdx=0;
+    if(i+consumed<jamo.length){
+      const next=jamo[i+consumed];
+      const nextIdx=JONG.indexOf(next);
+      // 다음+다음이 중성이면 종성으로 쓰지 않음(다음 글자의 초성)
+      if(nextIdx>0){
+        const after=jamo[i+consumed+1];
+        if(after && JUNG.indexOf(after)>=0){
+          // 종성 안 씀
+        } else {
+          // 복합 종성?
+          const after2=jamo[i+consumed+1];
+          const dbl=after2?DBL_JONG[next+after2]:null;
+          if(dbl){
+            const dblIdx=JONG.indexOf(dbl);
+            const after3=jamo[i+consumed+2];
+            if(dblIdx>0 && (!after3 || JUNG.indexOf(after3)<0)){
+              jongIdx=dblIdx; consumed+=2;
+            } else { jongIdx=nextIdx; consumed+=1; }
+          } else { jongIdx=nextIdx; consumed+=1; }
+        }
+      }
+    }
+    out+=String.fromCharCode(0xAC00+choIdx*588+jungIdx*28+jongIdx);
+    i+=consumed;
+  }
+  return out;
+}
+
+/* === 오타/이표기 보정 === */
+const SPELL_FIX={
+  '아반테':'아반떼','쏘나타':'소나타','산타페':'싼타페','넥소':'넥쏘',
+  '무소':'무쏘','쏘렌토':'소렌토','쏘울':'소울','투산':'투싼',
+  '제내시스':'제네시스','펠리세이드':'팰리세이드','그렌저':'그랜저'
+};
+const _CHO_N={1:0,4:3,8:7,13:12,10:9};
+const _JUNG_N={1:5,3:7,6:4};
+const _JONG_N={2:1,20:19};
+function normKo(s){
+  let out='';
+  for(const ch of String(s).toLowerCase()){
+    const code=ch.charCodeAt(0)-0xAC00;
+    if(code>=0 && code<11172){
+      let cho=Math.floor(code/588), jung=Math.floor((code%588)/28), jong=code%28;
+      cho=_CHO_N[cho]!==undefined?_CHO_N[cho]:cho;
+      jung=_JUNG_N[jung]!==undefined?_JUNG_N[jung]:jung;
+      jong=_JONG_N[jong]!==undefined?_JONG_N[jong]:jong;
+      out+=String.fromCharCode(0xAC00+cho*588+jung*28+jong);
+    } else out+=ch;
+  }
+  return out;
+}
+function rowHayNorm(r){return normKo(r.car+' '+r.model+' '+r.brand+' '+r.bshort);}
+
+function searchRows(term){
+  const t=term.toLowerCase();
+  let rows=DATA.filter(r=>(r.car+' '+r.model+' '+r.brand+' '+r.bshort).toLowerCase().includes(t))
+               .filter(r=>!activeBrand||r.brand===activeBrand);
+  if(rows.length) return rows;
+  let fixed=term;
+  for(const k in SPELL_FIX){ if(fixed.includes(k)) fixed=fixed.split(k).join(SPELL_FIX[k]); }
+  if(fixed!==term){
+    const ft=fixed.toLowerCase();
+    rows=DATA.filter(r=>(r.car+' '+r.model+' '+r.brand+' '+r.bshort).toLowerCase().includes(ft))
+             .filter(r=>!activeBrand||r.brand===activeBrand);
+    if(rows.length) return rows;
+  }
+  const nt=normKo(fixed);
+  if(nt.trim()){
+    rows=DATA.filter(r=>rowHayNorm(r).includes(nt))
+             .filter(r=>!activeBrand||r.brand===activeBrand);
+  }
+  return rows;
+}
+
+function rowHay(r){return (r.car+' '+r.model+' '+r.brand+' '+r.bshort).toLowerCase();}
+
+/* === 붙여쓴 입력에서 브랜드명 분리 (예: "현대i30" → 브랜드"현대" + 차종"i30") ===
+ * 공백 없이 브랜드+차종을 붙여 쓴 경우, 맨 앞이나 맨 뒤에 브랜드명이 있으면 떼어낸다.
+ * 브랜드명만(현대), 차종명만(i30) 입력한 경우엔 분리하지 않아 기존 검색에 영향 없음. */
+function splitConcatBrand(term){
+  const t=term.trim();
+  if(!t || /\s/.test(t)) return null;              // 공백 있으면 여기서 처리 안 함
+  const shorts=[...new Set(DATA.map(r=>r.bshort))].filter(Boolean)
+                 .sort((a,b)=>b.length-a.length);   // 긴 브랜드명 우선 (제네시스 > 제)
+  const lt=t.toLowerCase();
+  for(const b of shorts){
+    const lb=b.toLowerCase();
+    if(t.length<=b.length) continue;
+    if(lt.startsWith(lb)) return {brand:b, rest:t.slice(b.length).trim()};            // 현대i30
+    if(lt.endsWith(lb))   return {brand:b, rest:t.slice(0,t.length-b.length).trim()}; // i30현대
+  }
+  return null;
+}
+
+function multiWordSearch(term){
+  let parts=term.split(/\s+/).filter(Boolean);
+  // 공백이 없어 한 덩어리지만, 브랜드+차종이 붙어있으면 쪼갠다
+  if(parts.length<2){
+    const sp=splitConcatBrand(term);
+    if(sp && sp.rest) parts=[sp.brand, sp.rest];
+    else return null;
+  }
+  const brandShorts=new Set(DATA.map(r=>r.bshort));
+  const brandWords=parts.filter(p=>brandShorts.has(p));
+  const otherWords=parts.filter(p=>!brandShorts.has(p));
+  let typedBrand=null, targets;
+  if(otherWords.length){
+    targets=otherWords;
+    typedBrand=brandWords.length?brandWords[0]:null;
+  } else {
+    typedBrand=parts[0];
+    targets=parts.slice(1);
+  }
+  if(!targets.length) return null;
+  const matchWord=(r,w)=>{
+    const lw=w.toLowerCase();
+    if(rowHay(r).includes(lw)) return true;
+    return rowHayNorm(r).includes(normKo(w));
+  };
+  let rows=DATA.filter(r=>targets.every(w=>matchWord(r,w)));
+  if(activeBrand) rows=rows.filter(r=>r.brand===activeBrand);
+  if(!rows.length) return null;
+  const usedTerm=targets.join(' ');
+  if(typedBrand){
+    const resultShorts=new Set(rows.map(r=>r.bshort));
+    if(resultShorts.has(typedBrand)){
+      const filtered=rows.filter(r=>r.bshort===typedBrand);
+      return {rows: filtered.length?filtered:rows, suggestTerm:null, hlTerm:usedTerm};
+    } else {
+      return {rows, suggestTerm:usedTerm, hlTerm:usedTerm};
+    }
+  }
+  return {rows, suggestTerm:null, hlTerm:usedTerm};
+}
+
+function properSuggest(typedTerm, rows){
+  let fixed=typedTerm;
+  for(const k in SPELL_FIX){ if(fixed.includes(k)) fixed=fixed.split(k).join(SPELL_FIX[k]); }
+  const nt=normKo(fixed);
+  if(!nt) return typedTerm;
+  const cands=[];
+  rows.forEach(r=>{ cands.push(r.bshort, r.car, r.model); });
+  let best=null;
+  for(const c of cands){
+    if(!c) continue;
+    if(normKo(c).includes(nt)){
+      if(best===null || c.length<best.length) best=c;
+    }
+  }
+  return best || fixed;
+}
+function makeSuggest(properTerm, typedTerm){
+  return '<div class="suggest"><span class="ic">!</span><span><span class="lab">제안</span><span class="hi">'+esc(properTerm)+'</span>(으)로 검색한 결과입니다.<span class="typed">'+esc(typedTerm)+'</span></span></div>';
+}
+
+function render(){
+  const term=q.value.trim();
+  clr.classList.toggle('on',!!term);
+
+  let rows, suggestHtml='', hlTerm=term;
+  if(!term){
+    rows=activeBrand?DATA.filter(r=>r.brand===activeBrand):DATA;
+  } else {
+    rows=searchRows(term);
+    // 직접 검색 결과가 있어도, 붙여쓴 "브랜드+차종"이면 더 정확히 좁혀준다
+    // 예: "현대i30" → 단순매칭은 0건이지만, 분리하면 현대의 i30만 정확히 노출
+    const sp=splitConcatBrand(term);
+    if(sp && sp.rest){
+      const mw0=multiWordSearch(term);
+      if(mw0 && mw0.rows.length){
+        rows=mw0.rows;
+        hlTerm=mw0.hlTerm||term;
+      }
+    }
+    if(!rows.length){
+      // 1) 영문→한글 자판 변환 재시도
+      const ko=enToKo(term);
+      if(ko && ko!==term){
+        const koRows=searchRows(ko);
+        if(koRows.length){
+          rows=koRows;
+          const proper=properSuggest(ko, koRows);
+          hlTerm=proper;
+          suggestHtml=makeSuggest(proper, term);
+        }
+      }
+      // 2) 여전히 없으면 다단어(브랜드+차종) 검색
+      if(!rows.length){
+        const mw=multiWordSearch(term);
+        if(mw){
+          rows=mw.rows;
+          const proper=properSuggest(mw.hlTerm, mw.rows);
+          hlTerm=proper;
+          if(mw.suggestTerm){
+            suggestHtml=makeSuggest(proper, term);
+          }
+        }
+      }
+    }
+  }
+
+  cntEl.textContent=rows.length+'개 차종';
+  if(!rows.length){resEl.innerHTML='<div class="empty"><div class="big">검색 결과가 없어요</div>다른 차량명이나 브랜드로 검색해 보세요.</div>';return;}
+
+  // 브랜드별 그룹화
+  const groups={};
+  rows.forEach(r=>{(groups[r.brand]=groups[r.brand]||[]).push(r);});
+  const gkeys=Object.keys(groups).sort((a,b)=>orderIdx[a]-orderIdx[b]);
+
+  let html=suggestHtml;
+  gkeys.forEach(bk=>{
+    const items=groups[bk];
+    html+='<div class="group"><div class="ghead"><h2>'+esc(brandLabel(bk))+'</h2><span class="cnt">'+items.length+'개</span></div><div class="panel">';
+    html+='<div class="colhead"><span>모델명</span><span>운전석 사이즈</span><span>조수석 사이즈</span><span>후방 사이즈</span><span>호환 어댑터</span></div>';
+    items.forEach(r=>{
+      const rear=r.rear?'<span class="rcode">'+esc(r.rear)+'</span>':'<span class="dash">—</span>';
+      const wait=(r.adapter||'').includes('준비');
+      const adp='<span class="adp'+(wait?' wait':'')+'">'+esc(r.adapter)+'</span>';
+      const dv=r.d?'<span class="size">'+r.d+'<span class="u">mm</span></span>':'<span class="dash">—</span>';
+      const pv=r.p?'<span class="size">'+r.p+'<span class="u">mm</span></span>':'<span class="dash">—</span>';
+      html+='<div class="row">'+
+        '<div class="car"><div class="nm">'+hl(r.model,hlTerm)+'</div>'+(r.year?'<div class="dt"><span class="ylabel">연식 :</span> '+esc(r.year)+'</div>':'')+'</div>'+
+        '<div class="val desk-seat">'+dv+'</div>'+
+        '<div class="val desk-seat">'+pv+'</div>'+
+        '<div class="val rear">'+rear+'</div>'+
+        '<div class="val adpcell">'+adp+'</div>'+
+        // ↓ 모바일 전용 카드
+        '<div class="m-sizes">'+
+          '<div class="m-cell"><div class="mlab">운전석 사이즈</div>'+dv+'</div>'+
+          '<div class="m-cell"><div class="mlab">조수석 사이즈</div>'+pv+'</div>'+
+        '</div>'+
+        '<div class="m-extra">'+
+          '<div class="m-line"><span class="mlab">후방 사이즈</span>'+rear+'</div>'+
+          '<div class="m-line"><span class="mlab">호환 어댑터</span>'+adp+'</div>'+
+        '</div>'+
+      '</div>';
+    });
+    html+='</div></div>';
+  });
+  resEl.innerHTML=html;
+}
+
+q.addEventListener('input',render);
+clr.addEventListener('click',()=>{q.value='';render();q.focus();});
+
+// === 시트 연동: 페이지 진입 시 데이터 fetch ===
+async function init(){
+  if(API_URL.includes('PASTE_YOUR_APPS_SCRIPT_URL_HERE')){
+    resEl.innerHTML='<div class="errbox"><div class="big">설정이 필요합니다</div>HTML 파일을 열어 <code>API_URL</code>에 Apps Script 웹 앱 URL을 입력해 주세요.<br>자세한 방법은 셋팅 가이드를 참고하세요.</div>';
+    return;
+  }
+  resEl.innerHTML='<div class="loading"><div class="spinner"></div><div>차량 데이터를 불러오는 중...</div></div>';
+  try {
+    const res = await fetch(API_URL, {cache: 'default'});
+    if(!res.ok) throw new Error('서버 응답 오류 ('+res.status+')');
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error || '데이터 형식 오류');
+    DATA = json.rows || [];
+    if(!DATA.length){
+      resEl.innerHTML='<div class="errbox"><div class="big">데이터가 비어있어요</div>스프레드시트에 차량 정보가 입력되어 있는지 확인해 주세요.</div>';
+      return;
+    }
+    rebuildBrandDropdown();
+    render();
+  } catch(err){
+    resEl.innerHTML='<div class="errbox"><div class="big">데이터를 불러올 수 없어요</div>네트워크 상태를 확인하시거나 잠시 후 다시 시도해 주세요.<br><small style="color:var(--ink3)">오류: '+(err.message||err)+'</small><br><button onclick="init()">다시 시도</button></div>';
+  }
+}
+
+function rebuildBrandDropdown(){
+  brandSel.innerHTML='';
+  Object.keys(order).forEach(k=>delete order[k]);
+  Object.keys(orderIdx).forEach(k=>delete orderIdx[k]);
+  DATA.forEach(r=>order[r.brand]=(order[r.brand]||0)+1);
+  [...new Set(DATA.map(r=>r.brand))]
+    .filter(b=>!FIXED.includes(b))
+    .sort((a,b)=>a.localeCompare(b,'en'))
+    .forEach((b,i)=>orderIdx[b]=FIXED.length+i);
+  FIXED.forEach((b,i)=>orderIdx[b]=i);
+  const optAll=document.createElement('option');optAll.value='';optAll.textContent='전체 제조사';brandSel.appendChild(optAll);
+  Object.keys(order).sort((a,b)=>orderIdx[a]-orderIdx[b]).forEach(b=>{
+    const o=document.createElement('option');o.value=b;o.textContent=brandLabel(b);brandSel.appendChild(o);
+  });
+}
+
+init();
+</script>
+</body>
+</html>

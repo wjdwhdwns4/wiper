@@ -695,7 +695,7 @@ async function exportBrandImage(brand){
   wrap.innerHTML=captureHTML(brand);
   document.body.appendChild(wrap);
   try{
-    const canvas=await html2canvas(wrap,{scale:2,backgroundColor:'#ffffff',width:890,windowWidth:890});
+    const canvas=await html2canvas(wrap,{scale:1,backgroundColor:'#ffffff',width:890,windowWidth:890});
     const p=brandParts(brand);
     const a=document.createElement('a');
     a.download='레인폴드_와이퍼_'+(p.ko||p.en||'brand')+'.png';

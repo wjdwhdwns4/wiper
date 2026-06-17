@@ -188,7 +188,7 @@ function shortName(b){const m=b.match(/\((.*?)\)/);return m?m[1]:b;}
 function brandLabel(b){return b;}
 
 /* === 국산/수입 판별 ===
- * 국산 6개 브랜드(FIXED): 현대/기아/제네시스/르노삼성/KGM/쉐보레
+ * 국산 6개 브랜드(FIXED): 현대/기아/제네시스/르노삼성/KGM (쌍용)/쉐보레
  * 국산은 모델명에 차종명이 들어있어 한 줄로 충분.
  * 수입은 차종명(A CLASS)과 모델코드(W169)가 따로라, 차종명/모델명을 2줄로 나눠 표시. */
 function isDomestic(brand){return FIXED.includes(brand);}
@@ -215,7 +215,7 @@ function sameCarModel(car, model){
 }
 
 // 제조사 목록: 상위 6개 고정 + 나머지는 영문명 기준 오름차순(A→Z)
-const FIXED=['HYUNDAI (현대)','KIA (기아)','GENESIS (제네시스)','RENAULT SAMSUNG (삼성)','KGM','CHEVROLET (쉐보레)'];
+const FIXED=['HYUNDAI (현대)','KIA (기아)','GENESIS (제네시스)','RENAULT SAMSUNG (삼성)','KGM (쌍용)','CHEVROLET (쉐보레)'];
 const order={};
 DATA.forEach(r=>order[r.brand]=(order[r.brand]||0)+1);
 const orderIdx={};
